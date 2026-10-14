@@ -27,6 +27,10 @@ and in what format.
 typed response contract and stable error codes (`OK`,
 `DEPENDENCY_UNAVAILABLE`, `DEPENDENCY_TIMEOUT`).
 
+### Fixed
+
+- Oracle: `getChallengeWindow` (and so `isChallengeWindowOpen`) now throws `ChallengeWindowError` with code `CHALLENGE_WINDOW_INVALID` when `challengeWindowSeconds` is negative, NaN or Infinity, instead of silently returning an Invalid Date or a window that can never open (#1388).
+
 ### Changed
 
 - Readiness now fails **closed** (`503`) when any critical dependency (DB,
