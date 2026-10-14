@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { getChallengeWindow, isChallengeWindowOpen } from "./challengeWindow";
+import {
+  CHALLENGE_WINDOW_INVALID_CODE,
+  ChallengeWindowError,
+  getChallengeWindow,
+  isChallengeWindowOpen,
+} from "./challengeWindow";
 
 const WINDOW_SECONDS = 3600; // 1 hour for test clarity
 
@@ -67,5 +72,44 @@ describe("isChallengeWindowOpen with configured window duration", () => {
 
     expect(isChallengeWindowOpen(proposedAt, 86400, withinWindow)).toBe(true);
     expect(isChallengeWindowOpen(proposedAt, 86400, afterWindow)).toBe(false);
+  });
+});
+
+describe("challengeWindowSeconds validation", () => {
+  const proposedAt = new Date("2026-01-01T00:00:00.000Z");
+  const now = new Date("2026-01-01T00:00:00.000Z");
+
+  it.each([
+    ["negative", -1],
+    ["NaN", Number.NaN],
+    ["Infinity", Number.POSITIVE_INFINITY],
+    ["-Infinity", Number.NEGATIVE_INFINITY],
+  ])("getChallengeWindow throws a coded error for %s", (_label, seconds) => {
+    expect.assertions(3);
+    try {
+      getChallengeWindow(proposedAt, seconds);
+    } catch (err) {
+      expect(err).toBeInstanceOf(ChallengeWindowError);
+      expect((err as ChallengeWindowError).code).toBe(
+        CHALLENGE_WINDOW_INVALID_CODE
+      );
+      expect((err as ChallengeWindowError).code).toBe("CHALLENGE_WINDOW_INVALID");
+    }
+  });
+
+  it.each([
+    ["negative", -1],
+    ["NaN", Number.NaN],
+    ["Infinity", Number.POSITIVE_INFINITY],
+  ])("isChallengeWindowOpen propagates the error for %s", (_label, seconds) => {
+    expect(() => isChallengeWindowOpen(proposedAt, seconds, now)).toThrow(
+      ChallengeWindowError
+    );
+  });
+
+  it("accepts zero as an immediately-closed window", () => {
+    const { opensAt, closesAt } = getChallengeWindow(proposedAt, 0);
+    expect(closesAt.getTime()).toBe(opensAt.getTime());
+    expect(isChallengeWindowOpen(proposedAt, 0, now)).toBe(false);
   });
 });
